@@ -8,6 +8,8 @@ import (
 // Mutex is a drop-in replacement for the standard libraries sync.Mutex. It
 // offers the ability cancel waiting to obtain a lock by making use of Go's
 // select statement.
+//
+// The zero value is safe to use.
 type Mutex struct {
 	initMu sync.Mutex
 
