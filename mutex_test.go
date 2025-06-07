@@ -9,7 +9,7 @@ import (
 
 func TestMutexWaitLock(t *testing.T) {
 	var mu Mutex
-	mu.WaitLock() <- struct{}{}
+	mu.SendLock() <- struct{}{}
 	defer mu.Unlock()
 	if len(mu.state) != 1 {
 		t.Fatal("failed to set lock state")
@@ -51,7 +51,7 @@ func TestMutexTryLock_already_locked(t *testing.T) {
 
 func TestMutexLockCtx(t *testing.T) {
 	var mu Mutex
-	mu.LockCtx(t.Context())
+	mu.GetLock(t.Context())
 	defer mu.Unlock()
 	if len(mu.state) != 1 {
 		t.Fatal("failed to set lock state")
@@ -64,7 +64,7 @@ func TestMutexLockCtx_cancels(t *testing.T) {
 	mu.state <- struct{}{}
 	ctx, cancel := context.WithCancel(t.Context())
 	go cancel()
-	if err := mu.LockCtx(ctx); !errors.Is(err, context.Canceled) {
+	if err := mu.GetLock(ctx); !errors.Is(err, context.Canceled) {
 		t.Fatal("did not receive context cancel error")
 	}
 }
@@ -79,7 +79,7 @@ func TestMutexUnlock(t *testing.T) {
 	}
 }
 
-func TestMutexUnlock_panics_when_unlocked(t *testing.T) {
+func TestMutexUnlock_panics_when_already_unlocked(t *testing.T) {
 	var mu Mutex
 	defer func() {
 		if v := recover(); v == nil {
@@ -96,16 +96,20 @@ func TestMutexUnlock_panics_when_unlocked(t *testing.T) {
 // must be tested with "-race"
 func TestMutexLock_race(t *testing.T) {
 	var mu Mutex
-	var x int
+	var i int // some non atomic value to mutate.
+	n := 100
 	var wg sync.WaitGroup
-	for range 10 {
-		wg.Add(1)
+	wg.Add(n)
+	for range n {
 		go func() {
 			defer wg.Done()
 			mu.Lock()
 			defer mu.Unlock()
-			x++
+			i++
 		}()
 	}
 	wg.Wait()
+	if i != n {
+		t.Fatalf("expected %d locks, got %d", n, i)
+	}
 }
