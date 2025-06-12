@@ -35,20 +35,16 @@ func MyWork(ctx context.Context) error {
 }
 ```
 
-The `mutex.Mutex` can also work with Go's `select` statement. Sending `struct{}{}` is
-a common way of signaling, and here we use it with `SendLock()` to acquire the
-lock.
+The `mutex.Mutex` can also work with Go's `select` statement. Sending
+`struct{}{}` is a common way of signaling, and here we use it with `SendLock()`
+to acquire the lock.
 
 ```go
 var mu mutex.Mutex
 func MyWork(ctx context.Context) error {
 	select {
-	case <-someCloseSignal:
-		return errClosed
 	case <-time.After(someMaxDuration):
 		return errTimeout
-	case <-ctx.Done():
-		return fmt.Errorf("my work was canceled: %w", err)
 	case mu.SendLock() <- struct{}{}:
 		defer mu.Unlock()
 		fmt.Println("acquired lock")
