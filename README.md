@@ -19,9 +19,9 @@ The standard library's `sync.Mutex` does not offer a way to cancel its `Lock()`
 method while it is blocking to acquire the lock. This is usually fine when the
 mutex is guarding a resource that does not take much time to access, like a
 struct field. But when synchronizing longer-running processes, the need to
-cancel work that is not needed anymore is frequently an issue.
+cancel work is frequently an issue.
 
-If all you need is to cancel waiting on a lock with a context, this module's
+If all you need is to cancel acquiring a lock with a context, this module's
 `mutex.Mutex` has a convenient method for this.
 
 ```go
@@ -35,7 +35,7 @@ func MyWork(ctx context.Context) error {
 }
 ```
 
-The `mutex.Mutex` can work with Go's `select` statement. Sending `struct{}{}` is
+The `mutex.Mutex` can also work with Go's `select` statement. Sending `struct{}{}` is
 a common way of signaling, and here we use it with `SendLock()` to acquire the
 lock.
 
